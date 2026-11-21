@@ -132,3 +132,10 @@ test('Gespeicherter Stand wird robust geladen', () => {
   assert.equal(p.modules.akkorde.level, 1);
   assert.deepEqual(p.items, {});
 });
+
+test('Stufen sind kumulativ: höhere Stufen enthalten alles aus den unteren', () => {
+  for (const m of ['intervalle', 'akkorde']) for (let lvl = 2; lvl <= 4; lvl++) {
+    const lower = pool(m, lvl - 1).map((i) => i.key), upper = pool(m, lvl).map((i) => i.key);
+    for (const k of lower) assert.ok(upper.includes(k), `${m} Stufe ${lvl} enthält ${k}`);
+  }
+});

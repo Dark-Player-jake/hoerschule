@@ -74,7 +74,7 @@ function notePool(level) {
 }
 
 const INTERVAL_LEVELS = [[4, 7, 12], [2, 3, 4, 5, 7, 12], [1, 2, 3, 4, 5, 7, 8, 9, 12], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]];
-const CHORD_LEVELS = [['dur', 'moll'], ['dur', 'moll', 'verm', 'ueber'], ['dur', 'moll', 'verm', 'dom7', 'maj7', 'm7'], ['dur', 'moll', 'verm', 'ueber', 'dom7', 'maj7', 'm7']];
+const CHORD_LEVELS = [['dur', 'moll'], ['dur', 'moll', 'verm', 'ueber'], ['dur', 'moll', 'verm', 'ueber', 'dom7', 'maj7', 'm7'], ['dur', 'moll', 'verm', 'ueber', 'dom7', 'maj7', 'm7']];
 
 export function pool(module, level) {
   if (module === 'noten') return notePool(level);
