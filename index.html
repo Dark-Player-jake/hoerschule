@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hörschule</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23284b63'/><ellipse cx='6' cy='11.5' rx='2.6' ry='2' fill='%23f4d58d'/><rect x='8' y='3' width='1.4' height='8.5' fill='%23f4d58d'/></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+  <section id="home" class="view">
+    <header class="top">
+      <div>
+        <h1>Hörschule</h1>
+        <p class="sub">Musiktheorie in kleinen Runden: Noten lesen, Intervalle und Akkorde hören, Quintenzirkel.</p>
+      </div>
+      <div class="meta">
+        <div class="goal" aria-label="Tagesziel">
+          <svg viewBox="0 0 44 44" width="56" height="56" aria-hidden="true"><circle cx="22" cy="22" r="18" class="goal-bg"/><circle id="goalRing" cx="22" cy="22" r="18" class="goal-fg" pathLength="100" stroke-dasharray="0 100"/></svg>
+          <span><b id="goalText">0/20</b><small>heute</small></span>
+        </div>
+        <dl class="kpis">
+          <div><dt>Serie</dt><dd id="streak">0 Tage</dd></div>
+          <div><dt>Punkte</dt><dd id="xp">0</dd></div>
+        </dl>
+      </div>
+    </header>
+    <div id="modules" class="modules"></div>
+    <footer class="foot">
+      <button id="reset" type="button" class="link">Fortschritt zurücksetzen</button>
+    </footer>
+  </section>
+
+  <section id="quiz" class="view" hidden>
+    <header class="quiz-top">
+      <button id="back" type="button" class="link">← Übersicht</button>
+      <div class="qprog" role="progressbar" aria-label="Runde" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><i id="qbar"></i></div>
+      <span id="qcount" class="muted">1/10</span>
+    </header>
+    <div class="qcard">
+      <p id="qmodule" class="eyebrow"></p>
+      <h2 id="qprompt"></h2>
+      <div id="qvisual" class="qvisual"></div>
+      <button id="replay" type="button" class="replay" hidden>▶ Nochmal hören <kbd>R</kbd></button>
+      <div id="options" class="options"></div>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <div id="piano" class="piano" aria-hidden="true"></div>
+      <button id="nextQ" type="button" class="primary" hidden>Weiter <kbd>Enter</kbd></button>
+    </div>
+  </section>
+
+  <section id="summary" class="view" hidden>
+    <div class="qcard center">
+      <p class="eyebrow">Runde beendet</p>
+      <h2 id="sumTitle"></h2>
+      <p id="sumText" class="muted"></p>
+      <div class="row">
+        <button id="again" type="button" class="primary">Noch eine Runde</button>
+        <button id="home2" type="button">Zur Übersicht</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module" src="main.mjs"></script>
+</body>
+</html>
