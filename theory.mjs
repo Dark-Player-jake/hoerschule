@@ -105,8 +105,9 @@ export function weight(stat) {
 }
 
 export function pickItem(items, progress, r = Math.random, avoidKey = null) {
-  const cands = items.length > 1 ? items.filter((i) => i.key !== avoidKey) : items;
-  const ws = cands.map((i) => weight(progress.items[i.key]));
+  // Die letzte Frage nur seltener ziehen, nicht ausschließen: bei 2 Elementen wäre die Antwort sonst vorhersagbar
+  const cands = items;
+  const ws = cands.map((i) => weight(progress.items[i.key]) * (i.key === avoidKey && items.length > 1 ? 0.35 : 1));
   let x = r() * ws.reduce((a, b) => a + b, 0);
   for (let k = 0; k < cands.length; k++) if ((x -= ws[k]) <= 0) return cands[k];
   return cands.at(-1);
@@ -137,10 +138,11 @@ export function makeQuestion(module, progress, r = Math.random, avoidKey = null)
     else Object.assign(q, choices(correct, items.map((i) => nameOf(i.step, i.acc)), 4, r));
   } else if (module === 'intervalle') {
     const lo = 55 + Math.floor(r() * 12); // G3 bis F#4
-    const down = level >= 3 && r() < 0.35, together = level === 4 && r() < 0.35;
+    const prime = it.semis === 0; // bei der Prime sind Richtung und Zusammenklang sinnlos
+    const down = !prime && level >= 3 && r() < 0.35, together = !prime && level === 4 && r() < 0.35;
     const a = down ? lo + it.semis : lo, b = down ? lo : lo + it.semis;
     q.play = together ? [[a, b]] : [[a], [b]];
-    q.prompt = together ? 'Zwei Töne gleichzeitig: welches Intervall?' : `Welches Intervall hörst du (${down ? 'abwärts' : 'aufwärts'})?`;
+    q.prompt = together ? 'Zwei Töne gleichzeitig: welches Intervall?' : prime ? 'Welches Intervall hörst du?' : `Welches Intervall hörst du (${down ? 'abwärts' : 'aufwärts'})?`;
     const names = INTERVAL_LEVELS[level - 1].map((s) => INTERVALS[s].name);
     q.options = names; q.answer = names.indexOf(INTERVALS[it.semis].name);
   } else if (module === 'akkorde') {
@@ -176,6 +178,8 @@ const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000)
 export function record(progress, q, correct, date = today()) {
   const st = progress.items[q.key] ??= { seen: 0, right: 0 };
   st.seen++; if (correct) st.right++;
+  // Datum rückwärts (Zeitzone, Uhr verstellt): wie derselbe Tag behandeln statt Serie zu verlieren
+  if (progress.lastDay && date < progress.lastDay) date = progress.lastDay;
   if (progress.todayDate !== date) {
     progress.streak = progress.lastDay && dayDiff(progress.lastDay, date) === 1 ? progress.streak + 1 : 1;
     progress.todayDate = date; progress.today = 0;
@@ -198,19 +202,25 @@ export function record(progress, q, correct, date = today()) {
 export function levelProgress(progress, module) {
   const m = progress.modules[module];
   if (m.level >= MODULES[module].levels.length) return 1;
+  // Aufstieg braucht 10 richtige UND 12 Antworten im Fenster; der Balken zeigt das Langsamere
   const right = m.recent.reduce((a, b) => a + b, 0);
-  return Math.min(1, right / 10);
+  return Math.min(1, right / 10, m.recent.length / 12);
 }
 
 // Gespeicherten Stand robust einlesen: fehlende Felder ergänzen, Unsinn verwerfen.
 export function loadProgress(raw) {
   const fresh = newProgress();
   if (!raw || typeof raw !== 'object') return fresh;
-  const p = { ...fresh, ...raw, modules: { ...fresh.modules }, items: typeof raw.items === 'object' && raw.items ? raw.items : {} };
+  const items = {};
+  if (raw.items && typeof raw.items === 'object') for (const [k, v] of Object.entries(raw.items)) {
+    // nur plausible Statistiken übernehmen: endliche Zahlen, 0 ≤ right ≤ seen, seen ≥ 1
+    if (v && Number.isInteger(v.seen) && Number.isInteger(v.right) && v.seen >= 1 && v.right >= 0 && v.right <= v.seen) items[k] = { seen: v.seen, right: v.right };
+  }
+  const p = { ...fresh, ...raw, modules: { ...fresh.modules }, items };
   for (const m of Object.keys(MODULES)) {
     const src = raw.modules?.[m];
     const lvl = Number.isInteger(src?.level) ? Math.min(MODULES[m].levels.length, Math.max(1, src.level)) : 1;
-    p.modules[m] = { level: lvl, recent: Array.isArray(src?.recent) ? src.recent.slice(-12) : [] };
+    p.modules[m] = { level: lvl, recent: Array.isArray(src?.recent) ? src.recent.filter((x) => x === 0 || x === 1).slice(-12) : [] };
   }
   for (const k of ['xp', 'streak', 'today']) if (!Number.isFinite(p[k])) p[k] = 0;
   return p;

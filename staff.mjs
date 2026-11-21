@@ -3,10 +3,20 @@ import { CLEFS } from './theory.mjs';
 // ---------- Notensystem (SVG) ----------
 const SHARP_STEPS = { treble: [38, 35, 39, 36, 33, 37, 34], bass: [24, 21, 25, 22, 19, 23, 20] };
 const FLAT_STEPS = { treble: [34, 37, 33, 36, 32, 35, 31], bass: [20, 23, 19, 22, 18, 21, 17] };
+// Lage relativ zur untersten Linie (0 = 1. Linie, 1 = 1. Zwischenraum …) als Text für Screenreader
+function position(d) {
+  if (d >= 0 && d <= 8) return d % 2 === 0 ? `auf der ${d / 2 + 1}. Linie` : `im ${(d + 1) / 2}. Zwischenraum`;
+  if (d < 0) { const k = -d; return k % 2 === 0 ? `auf der ${k / 2}. Hilfslinie unten` : k === 1 ? 'direkt unter dem System' : `unter der ${(k - 1) / 2}. Hilfslinie unten`; }
+  const k = d - 8; return k % 2 === 0 ? `auf der ${k / 2}. Hilfslinie oben` : k === 1 ? 'direkt über dem System' : `über der ${(k - 1) / 2}. Hilfslinie oben`;
+}
+
 export function staffSVG({ clef, notes = [], keySig = 0 }) {
   const gap = 12, top = 46, W = 300, H = top + gap * 4 + 50;
   const bottom = CLEFS[clef].bottomLine, yOf = (s) => top + gap * 4 - (s - bottom) * (gap / 2);
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W * 1.4}" role="img" aria-label="${CLEFS[clef].name}${keySig ? `, ${Math.abs(keySig)} ${keySig > 0 ? 'Kreuze' : 'B'}` : ''}${notes.length ? ', eine Note' : ''}">`;
+  const label = [CLEFS[clef].name];
+  if (keySig) label.push(`${Math.abs(keySig)} ${keySig > 0 ? (Math.abs(keySig) === 1 ? 'Kreuz' : 'Kreuze') : 'b-Vorzeichen'}`);
+  for (const n of notes) label.push(`eine Note ${position(n.step - bottom)}${n.acc ? (n.acc > 0 ? ' mit Kreuz' : ' mit b') : ''}`);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W * 1.4}" role="img" aria-label="${label.join(', ')}">`;
   for (let i = 0; i < 5; i++) s += `<line x1="10" x2="${W - 10}" y1="${top + i * gap}" y2="${top + i * gap}" stroke="currentColor" stroke-width="1.2"/>`;
   s += clef === 'treble' ? trebleClef(18, top, gap) : bassClef(18, top, gap);
   const sigSteps = keySig > 0 ? SHARP_STEPS[clef] : FLAT_STEPS[clef];

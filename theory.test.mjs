@@ -82,7 +82,7 @@ test('Stufenaufstieg nach 10 von 12 richtig', () => {
   const q = makeQuestion('intervalle', p);
   for (let i = 0; i < 11; i++) record(p, q, i !== 3, '2026-11-21');
   assert.equal(p.modules.intervalle.level, 1);
-  assert.ok(levelProgress(p, 'intervalle') > 0.9);
+  assert.ok(levelProgress(p, 'intervalle') > 0.9);  // 10 von 11 richtig
   const r = record(p, q, true, '2026-11-21');
   assert.equal(r.levelUp, true);
   assert.equal(p.modules.intervalle.level, 2);
@@ -138,4 +138,38 @@ test('Stufen sind kumulativ: höhere Stufen enthalten alles aus den unteren', ()
     const lower = pool(m, lvl - 1).map((i) => i.key), upper = pool(m, lvl).map((i) => i.key);
     for (const k of lower) assert.ok(upper.includes(k), `${m} Stufe ${lvl} enthält ${k}`);
   }
+});
+
+test('Bei zwei Elementen ist die nächste Frage nicht vorhersagbar', () => {
+  const p = newProgress();
+  let prev = null, same = 0;
+  for (let i = 0; i < 400; i++) { const q = makeQuestion('akkorde', p, Math.random, prev); if (q.key === prev) same++; prev = q.key; }
+  assert.ok(same > 40, `Wiederholungen kommen vor (${same}/400)`);
+  assert.ok(same < 200, 'aber seltener als Wechsel');
+});
+
+test('Prime wird nie abwärts oder gleichzeitig gefragt', () => {
+  const p = newProgress(); p.modules.intervalle.level = 4;
+  for (let i = 0; i < 3000; i++) {
+    const q = makeQuestion('intervalle', p);
+    if (q.options[q.answer] === 'Prime') { assert.equal(q.prompt, 'Welches Intervall hörst du?'); assert.equal(q.play.length, 2); }
+  }
+});
+
+test('Datum rückwärts setzt Serie und Tageszähler nicht zurück', () => {
+  const p = newProgress(); const q = makeQuestion('noten', p);
+  record(p, q, true, '2026-11-22'); record(p, q, true, '2026-11-23'); record(p, q, true, '2026-11-22');
+  assert.equal(p.streak, 2); assert.equal(p.today, 2);
+});
+
+test('Balken erreicht 100 % erst, wenn der Aufstieg auch möglich ist', () => {
+  const p = newProgress(); const q = makeQuestion('akkorde', p);
+  for (let i = 0; i < 10; i++) record(p, q, true, '2026-11-22');
+  assert.ok(levelProgress(p, 'akkorde') < 1);
+});
+
+test('Manipulierte Statistiken werden beim Laden verworfen', () => {
+  const p = loadProgress({ items: { a: { seen: 0, right: 0 }, b: 'x', c: { seen: 3, right: 5 }, d: { seen: 4, right: 2 } }, modules: { noten: { level: 1, recent: ['1', 1, 0, 2] } } });
+  assert.deepEqual(Object.keys(p.items), ['d']);
+  assert.deepEqual(p.modules.noten.recent, [1, 0]);
 });

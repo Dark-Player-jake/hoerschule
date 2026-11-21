@@ -14,14 +14,23 @@ function audio() {
   if (!ac) {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
-    ac = new AC();
+    try { ac = new AC(); } catch { return null; }
     const comp = ac.createDynamicsCompressor();
     out = ac.createGain(); out.gain.value = 0.5;
     out.connect(comp).connect(ac.destination);
   }
-  if (ac.state === 'suspended') ac.resume();
+  if (ac.state !== 'running') ac.resume().catch(() => {});
   return ac;
 }
+// Jede Frage bekommt einen eigenen Ausgang; beim Wechsel wird der alte sanft stummgeschaltet,
+// damit nichts in die nächste Frage oder die Übersicht hineinklingt.
+let voice = null, timers = [];
+function stopSound() {
+  timers.forEach(clearTimeout); timers = [];
+  if (voice && ac) { voice.gain.setTargetAtTime(0, ac.currentTime, 0.03); const v = voice; setTimeout(() => v.disconnect(), 300); }
+  voice = null;
+}
+function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
 // Klavierähnlich: Grundton + Obertöne mit schnellem Anschlag und langem Ausklingen
 function note(midi, at, dur = 1.6, vol = 0.22) {
   const f = 440 * Math.pow(2, (midi - 69) / 12), t = ac.currentTime + at;
@@ -30,7 +39,8 @@ function note(midi, at, dur = 1.6, vol = 0.22) {
   g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
   g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.25);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  g.connect(out);
+  if (!voice) { voice = ac.createGain(); voice.connect(out); }
+  g.connect(voice);
   [[1, 'triangle', 1], [2, 'sine', 0.35], [3, 'sine', 0.12], [4, 'sine', 0.05]].forEach(([h, type, v]) => {
     const o = ac.createOscillator(), og = ac.createGain();
     o.type = type; o.frequency.value = f * h; og.gain.value = v;
@@ -38,7 +48,9 @@ function note(midi, at, dur = 1.6, vol = 0.22) {
   });
 }
 function playQuestion(q) {
-  if (!q.play || !audio()) return;
+  if (!q.play) return;
+  if (!audio()) { if (q.module !== 'noten') $('feedback').textContent = 'Dein Browser spielt hier keinen Ton ab. Die Hörmodule brauchen Audio.'; return; }
+  if (voice) { stopSound(); } // erneutes Abspielen ersetzt statt zu überlagern
   let at = 0.05;
   q.play.forEach((group, gi) => {
     if (q.arpeggio && gi === 0) { group.forEach((m, k) => note(m, at + k * 0.22, 1.2)); at += group.length * 0.22 + 0.45; }
@@ -73,6 +85,7 @@ function highlight(notes) {
 function show(id) { for (const v of document.querySelectorAll('.view')) v.hidden = v.id !== id; }
 
 function renderHome() {
+  stopSound();
   const d = today();
   const done = progress.todayDate === d ? progress.today : 0;
   $('goalRing').setAttribute('stroke-dasharray', `${Math.min(100, (done / GOAL) * 100)} 100`);
@@ -98,8 +111,8 @@ let round = null;
 function startRound(module) {
   audio();
   round = { module, n: 0, right: 0, q: null, answered: false, levelUps: [] };
+  show('quiz'); // erst sichtbar machen, sonst kann die Frage keinen Fokus bekommen
   nextQuestion();
-  show('quiz');
 }
 
 function nextQuestion() {
@@ -113,8 +126,9 @@ function nextQuestion() {
   const listen = module === 'intervalle' || module === 'akkorde';
   $('replay').hidden = !listen;
   const opts = $('options');
-  opts.className = 'options' + (q.options.length === 7 ? ' letters' : '');
-  opts.innerHTML = q.options.map((o, i) => `<button type="button" data-i="${i}">${o}${q.options.length <= 9 ? ` <kbd>${i + 1}</kbd>` : ''}</button>`).join('');
+  opts.className = 'options' + (module === 'noten' && q.options.length === 7 ? ' letters' : '');
+  // Tastenhinweis für die ersten neun Antworten (Ziffern 1–9), für Screenreader verborgen
+  opts.innerHTML = q.options.map((o, i) => `<button type="button" data-i="${i}">${o}${i < 9 ? ` <kbd aria-hidden="true">${i + 1}</kbd>` : ''}</button>`).join('');
   for (const b of opts.children) b.addEventListener('click', () => answer(+b.dataset.i));
   $('feedback').textContent = ''; $('feedback').className = 'feedback';
   $('nextQ').hidden = true;
@@ -123,8 +137,9 @@ function nextQuestion() {
   $('qcount').textContent = `${round.n + 1}/${ROUND}`;
   $('qbar').style.width = `${(round.n / ROUND) * 100}%`;
   $('qbar').parentElement.setAttribute('aria-valuenow', round.n);
-  if (listen) setTimeout(() => playQuestion(q), 150);
-  opts.firstElementChild?.focus();
+  if (listen) later(() => playQuestion(q), 150);
+  // Fokus auf die Frage statt auf Antwort 1: Screenreader liest sie vor, ein doppeltes Enter antwortet nicht versehentlich
+  $('qprompt').focus();
 }
 
 function answer(i) {
@@ -142,7 +157,7 @@ function answer(i) {
   fb.textContent = (ok ? 'Richtig. ' : `Leider nein, es war ${q.options[q.answer]}. `) + explain(q);
   if (res.levelUp) fb.textContent += ` Stufe ${res.level} freigeschaltet!`;
   chime(ok);
-  if (q.play) { highlight(q.play.flat()); if (round.module === 'noten') setTimeout(() => playQuestion(q), 350); }
+  if (q.play) { highlight(q.play.flat()); if (round.module === 'noten') later(() => playQuestion(q), 350); }
   round.n++;
   $('qbar').style.width = `${(round.n / ROUND) * 100}%`;
   $('nextQ').hidden = false;
@@ -150,18 +165,20 @@ function answer(i) {
 }
 
 function explain(q) {
-  if (q.module === 'noten') { const n = q.staff.notes[0]; return `Klingt als ${nameOf(n.step, n.acc)}${Math.floor(n.step / 7)}.`; }
+  if (q.module === 'noten') { const n = q.staff.notes[0]; return `Klingt als ${nameOf(n.step, n.acc)} in der ${Math.floor(n.step / 7)}. Oktave (C4 = eingestrichenes c).`; }
   if (q.module === 'intervalle') { const [a, b] = q.play.flat(); return `${Math.abs(b - a)} Halbtonschritte.`; }
   return '';
 }
 
 function next() {
   if (!round?.answered) return;
+  stopSound();
   if (round.n >= ROUND) return finish();
   nextQuestion();
 }
 
 function finish() {
+  stopSound();
   const { right, levelUps, module } = round;
   $('sumTitle').textContent = right === ROUND ? 'Fehlerfrei!' : right >= 8 ? 'Stark!' : right >= 5 ? 'Gut dabei.' : 'Dranbleiben lohnt sich.';
   $('sumText').textContent = `${right} von ${ROUND} richtig in „${MODULES[module].title}".` + (levelUps.length ? ` Neu: Stufe ${levelUps.at(-1)}.` : '');
@@ -171,7 +188,7 @@ function finish() {
 
 $('replay').addEventListener('click', () => playQuestion(round.q));
 $('nextQ').addEventListener('click', next);
-$('back').addEventListener('click', renderHome);
+$('back').addEventListener('click', () => { stopSound(); renderHome(); });
 $('home2').addEventListener('click', renderHome);
 $('again').addEventListener('click', () => startRound(round.module));
 $('reset').addEventListener('click', () => {
@@ -180,11 +197,14 @@ $('reset').addEventListener('click', () => {
 });
 
 addEventListener('keydown', (e) => {
-  if ($('quiz').hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (e.key === 'Escape' && (!$('quiz').hidden || !$('summary').hidden)) { stopSound(); renderHome(); return; }
+  if ($('quiz').hidden) return;
+  // Enter auf anderen Knöpfen (Übersicht, Nochmal hören) löst diese aus, nicht "Weiter"
+  const onOtherButton = e.target.closest('button') && e.target.id !== 'nextQ';
   if (!round.answered && /^[1-9]$/.test(e.key)) { const i = +e.key - 1; if (i < round.q.options.length) answer(i); }
-  else if (e.key === 'Enter' && round.answered) { e.preventDefault(); next(); }
+  else if (e.key === 'Enter' && round.answered && !onOtherButton) { e.preventDefault(); next(); }
   else if (e.key.toLowerCase() === 'r' && !$('replay').hidden) playQuestion(round.q);
-  else if (e.key === 'Escape') renderHome();
 });
 
 buildPiano();
