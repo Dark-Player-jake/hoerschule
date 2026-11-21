@@ -106,11 +106,10 @@ export function weight(stat) {
 
 export function pickItem(items, progress, r = Math.random, avoidKey = null) {
   // Die letzte Frage nur seltener ziehen, nicht ausschließen: bei 2 Elementen wäre die Antwort sonst vorhersagbar
-  const cands = items;
-  const ws = cands.map((i) => weight(progress.items[i.key]) * (i.key === avoidKey && items.length > 1 ? 0.35 : 1));
+  const ws = items.map((i) => weight(progress.items[i.key]) * (i.key === avoidKey && items.length > 1 ? 0.35 : 1));
   let x = r() * ws.reduce((a, b) => a + b, 0);
-  for (let k = 0; k < cands.length; k++) if ((x -= ws[k]) <= 0) return cands[k];
-  return cands.at(-1);
+  for (let k = 0; k < items.length; k++) if ((x -= ws[k]) <= 0) return items[k];
+  return items.at(-1);
 }
 
 function shuffle(a, r) {

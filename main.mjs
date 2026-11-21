@@ -32,15 +32,15 @@ function stopSound() {
 }
 function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
 // Klavierähnlich: Grundton + Obertöne mit schnellem Anschlag und langem Ausklingen
-function note(midi, at, dur = 1.6, vol = 0.22) {
+function note(midi, at, dur = 1.6, vol = 0.22, dest = null) {
   const f = 440 * Math.pow(2, (midi - 69) / 12), t = ac.currentTime + at;
   const g = ac.createGain();
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
   g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.25);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  if (!voice) { voice = ac.createGain(); voice.connect(out); }
-  g.connect(voice);
+  if (dest) g.connect(dest);
+  else { if (!voice) { voice = ac.createGain(); voice.connect(out); } g.connect(voice); }
   [[1, 'triangle', 1], [2, 'sine', 0.35], [3, 'sine', 0.12], [4, 'sine', 0.05]].forEach(([h, type, v]) => {
     const o = ac.createOscillator(), og = ac.createGain();
     o.type = type; o.frequency.value = f * h; og.gain.value = v;
@@ -59,7 +59,8 @@ function playQuestion(q) {
 }
 function chime(ok) {
   if (!audio()) return;
-  if (ok) { note(84, 0, 0.5, 0.08); note(88, 0.08, 0.6, 0.08); } else note(46, 0, 0.5, 0.1);
+  // direkt an out statt an voice: die nächste Frage bricht sonst den Bestätigungston ab
+  if (ok) { note(84, 0, 0.5, 0.08, out); note(88, 0.08, 0.6, 0.08, out); } else note(46, 0, 0.5, 0.1, out);
 }
 
 // ---------- Klaviatur ----------
@@ -86,7 +87,8 @@ function show(id) { for (const v of document.querySelectorAll('.view')) v.hidden
 
 function renderHome() {
   stopSound();
-  const d = today();
+  // Uhr zurückgestellt: record bucht dann weiter auf lastDay, die Anzeige muss denselben Tag nehmen
+  const d = progress.lastDay && progress.lastDay > today() ? progress.lastDay : today();
   const done = progress.todayDate === d ? progress.today : 0;
   $('goalRing').setAttribute('stroke-dasharray', `${Math.min(100, (done / GOAL) * 100)} 100`);
   $('goalText').textContent = `${Math.min(done, 999)}/${GOAL}`;
