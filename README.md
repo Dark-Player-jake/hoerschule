@@ -1,5 +1,7 @@
 # Hörschule
 
+[Deutsche Fassung](README.de.md)
+
 **Ear training and music theory in the browser.** Rounds of 10 questions across four modules,
 each with four levels. No build step, no dependencies, no audio files.
 
