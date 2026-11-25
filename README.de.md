@@ -11,6 +11,8 @@ Lern-App für Musiktheorie im Browser, in Runden zu je 10 Fragen. Vier Module mi
 
 ![Hörschule: Frage „Noten lesen“ mit Notenzeile, Antwortknöpfen, Rückmeldung und Klaviatur](docs/screenshot.png)
 
+**Live-Demo:** <https://dark-player-jake.github.io/hoerschule/>
+
 - **Adaptiv:** Was du oft falsch beantwortest, kommt häufiger dran. Die nächste Stufe schaltet sich frei, wenn du 10 der letzten 12 Fragen richtig hast.
 - **Motivation:** Tagesziel (20 Antworten), Tagesserie, Punkte, Fortschrittsbalken je Modul
 - **Klang:** Klaviertöne werden per Web Audio API synthetisiert, nach jeder Antwort zeigt die Klaviatur die gespielten Töne

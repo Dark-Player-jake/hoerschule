@@ -7,7 +7,7 @@ each with four levels. No build step, no dependencies, no audio files.
 
 ![Hörschule note-reading question with staff, answer buttons, feedback and piano keyboard](docs/screenshot.png)
 
-<!-- TODO before going public: add a live demo link (e.g. GitHub Pages). -->
+**Live demo:** <https://dark-player-jake.github.io/hoerschule/>
 
 > [!NOTE]
 > The app is in German and uses German note names (H, B, Fis, Es …). An English UI with
