@@ -5,7 +5,9 @@
 **Ear training and music theory in the browser.** Rounds of 10 questions across four modules,
 each with four levels. No build step, no dependencies, no audio files.
 
-<!-- TODO before going public: add docs/screenshot.png and a live demo link (e.g. GitHub Pages). -->
+![Hörschule note-reading question with staff, answer buttons, feedback and piano keyboard](docs/screenshot.png)
+
+<!-- TODO before going public: add a live demo link (e.g. GitHub Pages). -->
 
 > [!NOTE]
 > The app is in German and uses German note names (H, B, Fis, Es …). An English UI with
@@ -66,5 +68,4 @@ keep the project free of dependencies and external resources.
 
 ## License
 
-<!-- TODO: license not chosen yet (MIT proposed). Add a LICENSE file before making the repo public. -->
-Not decided yet.
+[MIT](LICENSE)

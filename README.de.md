@@ -9,6 +9,8 @@ Lern-App für Musiktheorie im Browser, in Runden zu je 10 Fragen. Vier Module mi
 | Akkorde hören | Dur/Moll → + vermindert, übermäßig → + Septakkorde → + Umkehrungen |
 | Quintenzirkel | bis 2 Vorzeichen → bis 4 → alle Dur-Tonarten → + Moll-Parallelen |
 
+![Hörschule: Frage „Noten lesen“ mit Notenzeile, Antwortknöpfen, Rückmeldung und Klaviatur](docs/screenshot.png)
+
 - **Adaptiv:** Was du oft falsch beantwortest, kommt häufiger dran. Die nächste Stufe schaltet sich frei, wenn du 10 der letzten 12 Fragen richtig hast.
 - **Motivation:** Tagesziel (20 Antworten), Tagesserie, Punkte, Fortschrittsbalken je Modul
 - **Klang:** Klaviertöne werden per Web Audio API synthetisiert, nach jeder Antwort zeigt die Klaviatur die gespielten Töne
@@ -30,3 +32,7 @@ node --test
 ```
 
 Prüft Notennamen und MIDI-Werte, dass jede generierte Frage aller Stufen genau eine richtige Antwort hat (über 3000 Fragen), dass Intervall-/Akkord-/Notenfragen zum gespielten Klang passen, Stufenaufstieg, Tagesserie, adaptive Auswahl und robustes Laden alter Spielstände.
+
+## Lizenz
+
+[MIT](LICENSE)

@@ -14,4 +14,4 @@ Klavierklang nicht angehört; Notensatz (Vorzeichen, Hilfslinien) nur stichprobe
 
 ## MVP / Erfolgstest
 
-Entstanden in der Nachtschicht 21./22.11.2026. Erfolgstest: `node --test` grün und die Kernaktion im Browser ohne Konsolenfehler bedienbar (per Playwright geprüft). Was Menschen noch prüfen müssen, steht in der Projekt-Memory `nachtschicht-2026-11-21`.
+Erfolgstest: `node --test` grün und die Kernaktion im Browser ohne Konsolenfehler bedienbar.
